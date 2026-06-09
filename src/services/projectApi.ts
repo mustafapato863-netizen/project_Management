@@ -3,7 +3,11 @@ import { Project } from "@/types";
 
 const getAPIURL = (): string => {
   if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+    let url = import.meta.env.VITE_API_URL;
+    if (url.startsWith("http") && !url.endsWith("/api") && !url.endsWith("/api/")) {
+      url = url.replace(/\/$/, "") + "/api";
+    }
+    return url;
   }
   return "/api";
 };

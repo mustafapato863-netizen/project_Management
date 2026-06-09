@@ -4,7 +4,13 @@ import axios from "axios";
 const getAPIURL = (): string => {
   if (typeof import.meta !== "undefined" && import.meta.env) {
     const env = import.meta.env as Record<string, unknown>;
-    if (typeof env.VITE_API_URL === "string") return env.VITE_API_URL;
+    if (typeof env.VITE_API_URL === "string") {
+      let url = env.VITE_API_URL;
+      if (url.startsWith("http") && !url.endsWith("/api") && !url.endsWith("/api/")) {
+        url = url.replace(/\/$/, "") + "/api";
+      }
+      return url;
+    }
   }
   return "http://localhost:8000/api";
 };
