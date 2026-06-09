@@ -7,6 +7,7 @@ interface UIStore {
   filters: ProjectFilters;
   sort: ProjectSort;
   sidebarOpen: boolean;
+  isAdmin: boolean;
 
   // Theme
   setTheme: (theme: Theme) => void;
@@ -18,6 +19,7 @@ interface UIStore {
 
   // UI State
   setSidebarOpen: (open: boolean) => void;
+  setIsAdmin: (isAdmin: boolean) => void;
 }
 
 const defaultFilters: ProjectFilters = {
@@ -39,6 +41,7 @@ export const useUIStore = create<UIStore>()(
       filters: defaultFilters,
       sort: defaultSort,
       sidebarOpen: true,
+      isAdmin: true,
 
       setTheme: (theme) => set({ theme }),
 
@@ -56,6 +59,7 @@ export const useUIStore = create<UIStore>()(
       setSort: (sort) => set({ sort }),
 
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setIsAdmin: (isAdmin) => set({ isAdmin }),
     }),
     {
       name: "ui-store",

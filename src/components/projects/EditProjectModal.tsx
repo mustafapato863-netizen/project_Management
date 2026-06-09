@@ -1,27 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjectStore } from "@/store/useProjectStore";
-import { ProjectCategory, ProjectPriority } from "@/types";
-import { generateId } from "@/utils/generateId";
-import { projectTemplates } from "@/data/projectTemplates";
+import { Project, ProjectCategory, ProjectPriority, ProjectStatus } from "@/types";
 
-interface CreateProjectModalProps {
+interface EditProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
+  project: Project;
 }
 
-const CreateProjectModal = ({ isOpen, onClose }: CreateProjectModalProps) => {
-  const addProject = useProjectStore((state) => state.addProject);
+const EditProjectModal = ({ isOpen, onClose, project }: EditProjectModalProps) => {
+  const updateProject = useProjectStore((state) => state.updateProject);
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<ProjectCategory>("Development");
-  const [priority, setPriority] = useState<ProjectPriority>("Medium");
-  const [startDate, setStartDate] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [useTemplate, setUseTemplate] = useState<string | null>(null);
+  const [name, setName] = useState(project.name);
+  const [description, setDescription] = useState(project.description);
+  const [category, setCategory] = useState<ProjectCategory>(project.category);
+  const [priority, setPriority] = useState<ProjectPriority>(project.priority);
+  const [status, setStatus] = useState<ProjectStatus>(project.status);
+  const [startDate, setStartDate] = useState(
+    project.startDate ? project.startDate.split("T")[0] : ""
+  );
+  const [dueDate, setDueDate] = useState(
+    project.dueDate ? project.dueDate.split("T")[0] : ""
+  );
 
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<{
@@ -36,18 +39,18 @@ const CreateProjectModal = ({ isOpen, onClose }: CreateProjectModalProps) => {
     startDate?: boolean;
   }>({});
 
-  const handleClose = () => {
-    setName("");
-    setDescription("");
-    setCategory("Development");
-    setPriority("Medium");
-    setStartDate("");
-    setDueDate("");
-    setUseTemplate(null);
+  // Update form state if project prop changes
+  useEffect(() => {
+    setName(project.name);
+    setDescription(project.description);
+    setCategory(project.category);
+    setPriority(project.priority);
+    setStatus(project.status);
+    setStartDate(project.startDate ? project.startDate.split("T")[0] : "");
+    setDueDate(project.dueDate ? project.dueDate.split("T")[0] : "");
     setErrors({});
     setTouched({});
-    onClose();
-  };
+  }, [project]);
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -63,7 +66,7 @@ const CreateProjectModal = ({ isOpen, onClose }: CreateProjectModalProps) => {
     return newErrors;
   };
 
-  const handleCreate = async () => {
+  const handleSave = async () => {
     setTouched({ name: true, dueDate: true, startDate: true });
     const newErrors = validateForm();
 
@@ -75,41 +78,21 @@ const CreateProjectModal = ({ isOpen, onClose }: CreateProjectModalProps) => {
     setIsSaving(true);
     setErrors({});
 
-    const templateConfig = useTemplate
-      ? projectTemplates[useTemplate as keyof typeof projectTemplates]
-      : null;
-
-    const now = new Date();
-    const dueDateISO = new Date(dueDate).toISOString();
-    const startDateISO = startDate
-      ? new Date(startDate).toISOString()
-      : now.toISOString();
-
     try {
-      await addProject({
+      await updateProject(project.id, {
         name,
         description,
-        category: templateConfig?.category || category,
-        status: "Active",
+        category,
         priority,
-        startDate: startDateISO,
-        dueDate: dueDateISO,
-        notes: "",
-        links: [],
-        milestones: templateConfig
-          ? templateConfig.milestones.map((m) => ({
-              ...m,
-              id: generateId(),
-              dueDate: dueDateISO,
-            }))
-          : [],
+        status,
+        startDate: startDate ? new Date(startDate).toISOString() : project.startDate,
+        dueDate: new Date(dueDate).toISOString(),
       });
-
-      handleClose();
+      onClose();
     } catch {
       setErrors((prev) => ({
         ...prev,
-        submit: "Failed to create project. Check that the backend server is running and accessible.",
+        submit: "Failed to update project. Check that the backend server is running and accessible.",
       }));
     } finally {
       setIsSaving(false);
@@ -120,11 +103,11 @@ const CreateProjectModal = ({ isOpen, onClose }: CreateProjectModalProps) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto text-left">
         <CardHeader className="flex items-center justify-between">
-          <CardTitle>Create New Project</CardTitle>
+          <CardTitle>Edit Project Details</CardTitle>
           <button
-            onClick={handleClose}
+            onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
           >
             <X size={24} />
@@ -132,33 +115,6 @@ const CreateProjectModal = ({ isOpen, onClose }: CreateProjectModalProps) => {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Template Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Start from template (optional)
-            </label>
-            <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
-              {Object.entries(projectTemplates).map(([key, template]) => (
-                <button
-                  key={key}
-                  onClick={() =>
-                    setUseTemplate(useTemplate === key ? null : key)
-                  }
-                  className={`p-3 rounded-lg border-2 transition-colors text-left ${
-                    useTemplate === key
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-300 hover:border-gray-400"
-                  }`}
-                >
-                  <p className="font-medium text-gray-900">{template.name}</p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    {template.milestones.length} milestones
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Project Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -200,8 +156,8 @@ const CreateProjectModal = ({ isOpen, onClose }: CreateProjectModalProps) => {
             />
           </div>
 
-          {/* Category & Priority */}
-          <div className="grid gap-4 grid-cols-2">
+          {/* Category, Priority & Status */}
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Category
@@ -233,6 +189,22 @@ const CreateProjectModal = ({ isOpen, onClose }: CreateProjectModalProps) => {
                 <option>Medium</option>
                 <option>High</option>
                 <option>Critical</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as ProjectStatus)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+              >
+                <option>Active</option>
+                <option>On Hold</option>
+                <option>Completed</option>
+                <option>Archived</option>
               </select>
             </div>
           </div>
@@ -294,15 +266,15 @@ const CreateProjectModal = ({ isOpen, onClose }: CreateProjectModalProps) => {
 
           {/* Actions */}
           <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-            <Button onClick={handleClose} variant="outline">
+            <Button onClick={onClose} variant="outline">
               Cancel
             </Button>
             <Button
-              onClick={handleCreate}
+              onClick={handleSave}
               disabled={isSaving}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {isSaving ? "Creating..." : "Create Project"}
+              {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </CardContent>
@@ -311,4 +283,4 @@ const CreateProjectModal = ({ isOpen, onClose }: CreateProjectModalProps) => {
   );
 };
 
-export default CreateProjectModal;
+export default EditProjectModal;

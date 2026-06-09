@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Project } from "@/types";
 import { useProjectStore } from "@/store/useProjectStore";
+import { useUIStore } from "@/store/useUIStore";
 import { Edit2, Trash2 } from "lucide-react";
 
 interface NotesSectionProps {
@@ -11,6 +12,7 @@ interface NotesSectionProps {
 
 const NotesSection = ({ project }: NotesSectionProps) => {
   const updateProject = useProjectStore((state) => state.updateProject);
+  const isAdmin = useUIStore((state) => state.isAdmin);
   const [isEditing, setIsEditing] = useState(false);
   const [noteContent, setNoteContent] = useState(project.notes || "");
 
@@ -28,7 +30,7 @@ const NotesSection = ({ project }: NotesSectionProps) => {
     <Card>
       <CardHeader className="flex items-center justify-between">
         <CardTitle className="text-lg">Project Notes</CardTitle>
-        {!isEditing && (
+        {!isEditing && isAdmin && (
           <button
             onClick={() => setIsEditing(true)}
             className="text-blue-600 hover:text-blue-700"
@@ -82,7 +84,9 @@ const NotesSection = ({ project }: NotesSectionProps) => {
             }`}
           >
             {project.notes ||
-              "No notes yet. Click the edit button to add notes."}
+              (isAdmin
+                ? "No notes yet. Click the edit button to add notes."
+                : "No notes yet.")}
           </div>
         )}
       </CardContent>

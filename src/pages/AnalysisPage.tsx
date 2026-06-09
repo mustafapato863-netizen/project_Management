@@ -76,7 +76,16 @@ const AnalysisPage: React.FC = () => {
     setLoadingFiles(true);
     try {
       const response = await listOutputFiles();
-      const allFiles = response.files || [];
+      let allFiles: OutputFile[] = [];
+      if (Array.isArray(response)) {
+        allFiles = response;
+      } else if (response && typeof response === "object") {
+        if (Array.isArray(response.files)) {
+          allFiles = response.files;
+        } else if (Array.isArray(response.data)) {
+          allFiles = response.data;
+        }
+      }
       setFiles(allFiles);
       const latestSummary = allFiles.find((f: OutputFile) => f.type === "Summary");
       if (latestSummary && !selectedFile)
@@ -93,7 +102,17 @@ const AnalysisPage: React.FC = () => {
     setLoadingData(true);
     try {
       const data = await readAnalysisFile(filename);
-      setDetails(data.details || []);
+      let detailsList: AnalysisDetail[] = [];
+      if (data && typeof data === "object") {
+        if (Array.isArray(data.details)) {
+          detailsList = data.details;
+        } else if (Array.isArray(data.data)) {
+          detailsList = data.data;
+        } else if (Array.isArray(data)) {
+          detailsList = data;
+        }
+      }
+      setDetails(detailsList);
     } catch {
       setError("Error reading the selected analysis file.");
     } finally {
@@ -112,7 +131,8 @@ const AnalysisPage: React.FC = () => {
   // 3. منطق الفلترة الموحد (البحث + الفريق + حالة التغيير)
   const filteredDetails = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    return details.filter((item) => {
+    const safeDetails = Array.isArray(details) ? details : [];
+    return safeDetails.filter((item) => {
       const matchesSheet =
         selectedSheet === "All" || item.Sheet === selectedSheet;
       const matchesChangeDir =
@@ -133,7 +153,8 @@ const AnalysisPage: React.FC = () => {
   const dynamicClassificationStats = useMemo(() => {
     const current = { A: 0, B: 0, C: 0 };
     const previous = { A: 0, B: 0, C: 0 };
-    filteredDetails.forEach((item) => {
+    const safeDetails = Array.isArray(filteredDetails) ? filteredDetails : [];
+    safeDetails.forEach((item) => {
       const dec = String(item.Decision || "").toUpperCase();
       const prevDec = String(item.PrevDecision || "").toUpperCase();
       if (dec in current) current[dec as "A" | "B" | "C"]++;
@@ -156,7 +177,10 @@ const AnalysisPage: React.FC = () => {
     setIsDeleting(true);
     try {
       await deleteOutputFile(fileToDelete);
-      setFiles((prev) => prev.filter((f) => f.filename !== fileToDelete));
+      setFiles((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        return list.filter((f) => f.filename !== fileToDelete);
+      });
       if (selectedFile === fileToDelete) {
         setSelectedFile(null);
         setDetails([]);

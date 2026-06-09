@@ -1,8 +1,11 @@
-import { Project, MilestoneStatus } from "@/types";
+import { Project, MilestoneStatus, Milestone } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { useProjectStore } from "@/store/useProjectStore";
+import { useUIStore } from "@/store/useUIStore";
 import { formatDate } from "@/utils/dateHelpers";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit2 } from "lucide-react";
+import EditMilestoneModal from "@/components/milestones/EditMilestoneModal";
+import { useState } from "react";
 
 interface MilestoneTimelineProps {
   project: Project;
@@ -25,6 +28,8 @@ const statusBgDot = {
 const MilestoneTimeline = ({ project }: MilestoneTimelineProps) => {
   const deleteMilestone = useProjectStore((state) => state.deleteMilestone);
   const updateMilestone = useProjectStore((state) => state.updateMilestone);
+  const isAdmin = useUIStore((state) => state.isAdmin);
+  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
 
   const sortedMilestones = [...project.milestones].sort(
     (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
@@ -80,36 +85,55 @@ const MilestoneTimeline = ({ project }: MilestoneTimelineProps) => {
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={milestone.status}
-                      onChange={(e) =>
-                        updateMilestone(project.id, milestone.id, {
-                          status: e.target.value as MilestoneStatus,
-                        })
-                      }
-                      className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
-                    >
-                      <option>Planned</option>
-                      <option>In Progress</option>
-                      <option>Completed</option>
-                      <option>Delayed</option>
-                    </select>
+                   {/* Actions */}
+                  {isAdmin && (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={milestone.status}
+                        onChange={(e) =>
+                          updateMilestone(project.id, milestone.id, {
+                            status: e.target.value as MilestoneStatus,
+                          })
+                        }
+                        className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+                      >
+                        <option>Planned</option>
+                        <option>In Progress</option>
+                        <option>Completed</option>
+                        <option>Delayed</option>
+                      </select>
 
-                    <button
-                      onClick={() => deleteMilestone(project.id, milestone.id)}
-                      className="p-2 text-gray-400 hover:text-red-600"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
+                      <button
+                        onClick={() => setEditingMilestone(milestone)}
+                        className="p-2 text-gray-400 hover:text-blue-600"
+                        title="Edit Milestone"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+
+                      <button
+                        onClick={() => deleteMilestone(project.id, milestone.id)}
+                        className="p-2 text-gray-400 hover:text-red-600"
+                        title="Delete Milestone"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       ))}
+      {editingMilestone && (
+        <EditMilestoneModal
+          isOpen={!!editingMilestone}
+          onClose={() => setEditingMilestone(null)}
+          projectId={project.id}
+          milestone={editingMilestone}
+        />
+      )}
     </div>
   );
 };

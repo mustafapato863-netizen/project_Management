@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Project, ProjectLink } from "@/types";
 import { useProjectStore } from "@/store/useProjectStore";
+import { useUIStore } from "@/store/useUIStore";
 import { Plus, ExternalLink, Trash2 } from "lucide-react";
 import { generateId } from "@/utils/generateId";
 
@@ -36,6 +37,7 @@ const LinkIcon: Record<string, string> = {
 
 const LinksSection = ({ project }: LinksSectionProps) => {
   const updateProject = useProjectStore((state) => state.updateProject);
+  const isAdmin = useUIStore((state) => state.isAdmin);
   const [isAdding, setIsAdding] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -71,7 +73,7 @@ const LinksSection = ({ project }: LinksSectionProps) => {
     <Card>
       <CardHeader className="flex items-center justify-between">
         <CardTitle className="text-lg">Links & Resources</CardTitle>
-        {!isAdding && (
+        {!isAdding && isAdmin && (
           <button
             onClick={() => setIsAdding(true)}
             className="text-blue-600 hover:text-blue-700"
@@ -142,15 +144,17 @@ const LinksSection = ({ project }: LinksSectionProps) => {
                   size={18}
                   className="text-gray-400 group-hover:text-blue-600"
                 />
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleDeleteLink(link.id);
-                  }}
-                  className="p-1 text-gray-400 hover:text-red-600"
-                >
-                  <Trash2 size={16} />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleDeleteLink(link.id);
+                    }}
+                    className="p-1 text-gray-400 hover:text-red-600"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </a>
             ))}
           </div>

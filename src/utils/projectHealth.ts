@@ -30,7 +30,8 @@ export function getProjectHealth(project: Project): ProjectHealth {
   }
 
   // Check for delayed milestones
-  const hasDelayedMilestones = project.milestones.some((m) => {
+  const milestones = Array.isArray(project.milestones) ? project.milestones : [];
+  const hasDelayedMilestones = milestones.some((m) => {
     const milestoneDueDate = new Date(m.dueDate);
     return (
       m.status !== "Completed" &&
@@ -70,13 +71,14 @@ export function getHealthDisplay(health: ProjectHealth) {
  * Get health based on milestone status
  */
 export function getMilestoneHealth(project: Project) {
-  const completed = project.milestones.filter(
+  const milestones = Array.isArray(project.milestones) ? project.milestones : [];
+  const completed = milestones.filter(
     (m) => m.status === "Completed",
   ).length;
-  const delayed = project.milestones.filter(
+  const delayed = milestones.filter(
     (m) => m.status === "Delayed",
   ).length;
-  const inProgress = project.milestones.filter(
+  const inProgress = milestones.filter(
     (m) => m.status === "In Progress",
   ).length;
 
@@ -84,6 +86,6 @@ export function getMilestoneHealth(project: Project) {
     completed,
     delayed,
     inProgress,
-    planned: project.milestones.filter((m) => m.status === "Planned").length,
+    planned: milestones.filter((m) => m.status === "Planned").length,
   };
 }

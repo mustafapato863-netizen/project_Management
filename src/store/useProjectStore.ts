@@ -117,7 +117,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       const created = await projectApi.create(projectData);
       const meta = await projectApi.getMeta();
       set((state) => ({
-        projects: [...state.projects, created],
+        projects: [...(Array.isArray(state.projects) ? state.projects : []), created],
         serverUpdatedAt: meta.updatedAt,
         lastSyncedAt: new Date().toISOString(),
         error: null,
@@ -134,7 +134,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       const updated = await projectApi.update(id, updates);
       const meta = await projectApi.getMeta();
       set((state) => ({
-        projects: state.projects.map((project) =>
+        projects: (Array.isArray(state.projects) ? state.projects : []).map((project) =>
           project.id === id ? updated : project,
         ),
         serverUpdatedAt: meta.updatedAt,
@@ -153,7 +153,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       await projectApi.delete(id);
       const meta = await projectApi.getMeta();
       set((state) => ({
-        projects: state.projects.filter((project) => project.id !== id),
+        projects: (Array.isArray(state.projects) ? state.projects : []).filter((project) => project.id !== id),
         serverUpdatedAt: meta.updatedAt,
         lastSyncedAt: new Date().toISOString(),
         error: null,
@@ -221,20 +221,24 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
   },
 
   getProjectsByStatus: (status) => {
-    return get().projects.filter((project) => project.status === status);
+    const list = get().projects;
+    return (Array.isArray(list) ? list : []).filter((project) => project.status === status);
   },
 
   getProjectsByCategory: (category) => {
-    return get().projects.filter((project) => project.category === category);
+    const list = get().projects;
+    return (Array.isArray(list) ? list : []).filter((project) => project.category === category);
   },
 
   getProjectsByPriority: (priority) => {
-    return get().projects.filter((project) => project.priority === priority);
+    const list = get().projects;
+    return (Array.isArray(list) ? list : []).filter((project) => project.priority === priority);
   },
 
   searchProjects: (query) => {
     const lowerQuery = query.toLowerCase();
-    return get().projects.filter(
+    const list = get().projects;
+    return (Array.isArray(list) ? list : []).filter(
       (project) =>
         project.name.toLowerCase().includes(lowerQuery) ||
         project.description.toLowerCase().includes(lowerQuery),
@@ -244,8 +248,9 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
   getAllDueSoonProjects: (days) => {
     const now = new Date();
     const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+    const list = get().projects;
 
-    return get().projects.filter((project) => {
+    return (Array.isArray(list) ? list : []).filter((project) => {
       const dueDate = new Date(project.dueDate);
       return dueDate > now && dueDate <= futureDate;
     });

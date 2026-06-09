@@ -1,28 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjectStore } from "@/store/useProjectStore";
-import { MilestoneStatus } from "@/types";
+import { Milestone, MilestoneStatus } from "@/types";
 
-interface AddMilestoneModalProps {
+interface EditMilestoneModalProps {
   isOpen: boolean;
   onClose: () => void;
   projectId: string;
+  milestone: Milestone;
 }
 
-const AddMilestoneModal = ({
+const EditMilestoneModal = ({
   isOpen,
   onClose,
   projectId,
-}: AddMilestoneModalProps) => {
-  const addMilestone = useProjectStore((state) => state.addMilestone);
+  milestone,
+}: EditMilestoneModalProps) => {
+  const updateMilestone = useProjectStore((state) => state.updateMilestone);
   const project = useProjectStore((state) => state.getProjectById(projectId));
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [status, setStatus] = useState<MilestoneStatus>("Planned");
+  const [title, setTitle] = useState(milestone.title);
+  const [description, setDescription] = useState(milestone.description);
+  const [dueDate, setDueDate] = useState(
+    milestone.dueDate ? milestone.dueDate.split("T")[0] : ""
+  );
+  const [status, setStatus] = useState<MilestoneStatus>(milestone.status);
 
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<{
@@ -35,15 +39,15 @@ const AddMilestoneModal = ({
     dueDate?: boolean;
   }>({});
 
-  const handleClose = () => {
-    setTitle("");
-    setDescription("");
-    setDueDate("");
-    setStatus("Planned");
+  // Reset/update form when props change
+  useEffect(() => {
+    setTitle(milestone.title);
+    setDescription(milestone.description);
+    setDueDate(milestone.dueDate ? milestone.dueDate.split("T")[0] : "");
+    setStatus(milestone.status);
     setErrors({});
     setTouched({});
-    onClose();
-  };
+  }, [milestone]);
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -59,7 +63,7 @@ const AddMilestoneModal = ({
     return newErrors;
   };
 
-  const handleAdd = async () => {
+  const handleSave = async () => {
     setTouched({ title: true, dueDate: true });
     const newErrors = validateForm();
 
@@ -72,18 +76,17 @@ const AddMilestoneModal = ({
     setErrors({});
 
     try {
-      await addMilestone(projectId, {
+      await updateMilestone(projectId, milestone.id, {
         title,
         description,
         status,
         dueDate: new Date(dueDate).toISOString(),
       });
-
-      handleClose();
+      onClose();
     } catch {
       setErrors((prev) => ({
         ...prev,
-        submit: "Failed to add milestone. Check that the backend server is running.",
+        submit: "Failed to update milestone. Check that the backend server is running.",
       }));
     } finally {
       setIsSaving(false);
@@ -94,11 +97,11 @@ const AddMilestoneModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-lg mx-4">
+      <Card className="w-full max-w-lg mx-4 text-left">
         <CardHeader className="flex items-center justify-between">
-          <CardTitle>Add Milestone</CardTitle>
+          <CardTitle>Edit Milestone</CardTitle>
           <button
-            onClick={handleClose}
+            onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
           >
             <X size={24} />
@@ -174,7 +177,7 @@ const AddMilestoneModal = ({
           {/* Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Initial Status
+              Status
             </label>
             <select
               value={status}
@@ -196,15 +199,15 @@ const AddMilestoneModal = ({
 
           {/* Actions */}
           <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-            <Button onClick={handleClose} variant="outline">
+            <Button onClick={onClose} variant="outline">
               Cancel
             </Button>
             <Button
-              onClick={handleAdd}
+              onClick={handleSave}
               disabled={isSaving}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {isSaving ? "Adding..." : "Add Milestone"}
+              {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </CardContent>
@@ -213,4 +216,4 @@ const AddMilestoneModal = ({
   );
 };
 
-export default AddMilestoneModal;
+export default EditMilestoneModal;

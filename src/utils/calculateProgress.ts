@@ -5,13 +5,14 @@ import { Project } from "@/types";
  * Progress = Completed Milestones / Total Milestones
  */
 export function calculateProjectProgress(project: Project): number {
-  if (project.milestones.length === 0) return 0;
+  const milestones = Array.isArray(project.milestones) ? project.milestones : [];
+  if (milestones.length === 0) return 0;
 
-  const completedCount = project.milestones.filter(
+  const completedCount = milestones.filter(
     (m) => m.status === "Completed",
   ).length;
 
-  return Math.round((completedCount / project.milestones.length) * 100);
+  return Math.round((completedCount / milestones.length) * 100);
 }
 
 /**

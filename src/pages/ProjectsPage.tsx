@@ -16,6 +16,7 @@ const ProjectsPage = () => {
   const searchProjects = useProjectStore((state) => state.searchProjects);
   const filters = useUIStore((state) => state.filters);
   const sort = useUIStore((state) => state.sort);
+  const isAdmin = useUIStore((state) => state.isAdmin);
 
   const [searchQuery, setSearchQuery] = useState(filters.searchQuery || "");
   const [showFilters, setShowFilters] = useState(false);
@@ -24,11 +25,13 @@ const ProjectsPage = () => {
 
   // Filter and sort projects
   const filteredProjects = useMemo(() => {
-    let result = projects;
+    const list = Array.isArray(projects) ? projects : [];
+    let result = [...list];
 
     // Apply search
     if (searchQuery.trim()) {
-      result = searchProjects(searchQuery);
+      const searchResult = searchProjects(searchQuery);
+      result = Array.isArray(searchResult) ? [...searchResult] : [];
     } else {
       // Apply status filter
       if (filters.status && filters.status.length > 0) {
@@ -71,13 +74,15 @@ const ProjectsPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          className="gap-2 bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus size={18} />
-          New Project
-        </Button>
+        {isAdmin && (
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="gap-2 bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus size={18} />
+            New Project
+          </Button>
+        )}
       </div>
 
       {/* Search and Filters */}

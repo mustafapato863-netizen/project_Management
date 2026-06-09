@@ -20,16 +20,17 @@ const DashboardPage = () => {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const onTrack = projects.filter((p) => getProjectHealth(p) === "On Track");
-    const atRisk = projects.filter((p) => getProjectHealth(p) === "At Risk");
-    const delayed = projects.filter((p) => getProjectHealth(p) === "Delayed");
-    const completed = projects.filter((p) => p.status === "Completed");
-    const active = projects.filter(
+    const list = Array.isArray(projects) ? projects : [];
+    const onTrack = list.filter((p) => getProjectHealth(p) === "On Track");
+    const atRisk = list.filter((p) => getProjectHealth(p) === "At Risk");
+    const delayed = list.filter((p) => getProjectHealth(p) === "Delayed");
+    const completed = list.filter((p) => p.status === "Completed");
+    const active = list.filter(
       (p) => p.status === "Active" || p.status === "On Hold",
     );
 
     return {
-      total: projects.length,
+      total: list.length,
       active: active.length,
       completed: completed.length,
       onTrack: onTrack.length,
@@ -40,11 +41,12 @@ const DashboardPage = () => {
 
   // Get status distribution
   const statusDistribution = useMemo(() => {
+    const list = Array.isArray(projects) ? projects : [];
     return {
-      Active: projects.filter((p) => p.status === "Active").length,
-      Completed: projects.filter((p) => p.status === "Completed").length,
-      OnHold: projects.filter((p) => p.status === "On Hold").length,
-      Archived: projects.filter((p) => p.status === "Archived").length,
+      Active: list.filter((p) => p.status === "Active").length,
+      Completed: list.filter((p) => p.status === "Completed").length,
+      OnHold: list.filter((p) => p.status === "On Hold").length,
+      Archived: list.filter((p) => p.status === "Archived").length,
     };
   }, [projects]);
 
@@ -52,15 +54,17 @@ const DashboardPage = () => {
   const upcomingMilestones = useMemo(() => {
     const now = new Date();
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const list = Array.isArray(projects) ? projects : [];
 
-    const milestones = projects
-      .flatMap((project) =>
-        project.milestones.map((m) => ({
+    const milestones = list
+      .flatMap((project) => {
+        const ms = Array.isArray(project.milestones) ? project.milestones : [];
+        return ms.map((m) => ({
           ...m,
           projectId: project.id,
           projectName: project.name,
-        })),
-      )
+        }));
+      })
       .filter(
         (m) =>
           m.status !== "Completed" &&
@@ -77,14 +81,16 @@ const DashboardPage = () => {
 
   // Get recent completed milestones
   const recentCompletedMilestones = useMemo(() => {
-    const completed = projects
-      .flatMap((project) =>
-        project.milestones.map((m) => ({
+    const list = Array.isArray(projects) ? projects : [];
+    const completed = list
+      .flatMap((project) => {
+        const ms = Array.isArray(project.milestones) ? project.milestones : [];
+        return ms.map((m) => ({
           ...m,
           projectId: project.id,
           projectName: project.name,
-        })),
-      )
+        }));
+      })
       .filter((m) => m.status === "Completed")
       .sort((a, b) => {
         if (!a.dueDate || !b.dueDate) return 0;
@@ -194,12 +200,13 @@ const DashboardPage = () => {
           <CardContent>
             <div className="space-y-3">
               {["Critical", "High", "Medium", "Low"].map((priority) => {
-                const count = projects.filter(
+                const list = Array.isArray(projects) ? projects : [];
+                const count = list.filter(
                   (p) => p.priority === priority,
                 ).length;
                 const percentage =
-                  projects.length > 0
-                    ? Math.round((count / projects.length) * 100)
+                  list.length > 0
+                    ? Math.round((count / list.length) * 100)
                     : 0;
                 return (
                   <div key={priority}>
