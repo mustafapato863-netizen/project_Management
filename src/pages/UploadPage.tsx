@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import axios from "axios";
 import {
-  Upload,
-  FileSpreadsheet,
-  CheckCircle,
-  XCircle,
-  Loader2,
-  Download,
-  PlayCircle,
-  Trash2,
-} from "lucide-react";
+  RiUploadCloud2Line,
+  RiFileExcel2Line,
+  RiCheckboxCircleLine,
+  RiCloseCircleLine,
+  RiLoader4Line,
+  RiDownloadLine,
+  RiPlayCircleLine,
+  RiDeleteBin6Line,
+} from "react-icons/ri";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -129,7 +129,7 @@ const UploadPage = () => {
             <span>Upload Weekly Reports</span>
             {(etlResult || files) && (
               <Button variant="ghost" size="sm" onClick={handleClear}>
-                <Trash2 className="h-4 w-4 mr-2" />
+                <RiDeleteBin6Line className="h-4 w-4 mr-2" />
                 Clear
               </Button>
             )}
@@ -144,7 +144,7 @@ const UploadPage = () => {
                 : "border-slate-300 hover:border-purple-400"
             }`}
           >
-            <Upload className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+            <RiUploadCloud2Line className="mx-auto h-12 w-12 text-slate-400 mb-4" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">
               Select Excel Files
             </h3>
@@ -167,7 +167,7 @@ const UploadPage = () => {
                 className="pointer-events-none"
                 disabled={uploading}
               >
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                <RiFileExcel2Line className="mr-2 h-4 w-4" />
                 Browse Files
               </Button>
             </label>
@@ -216,12 +216,12 @@ const UploadPage = () => {
             >
               {uploading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <RiLoader4Line className="mr-2 h-4 w-4 animate-spin" />
                   Processing... {uploadProgress}%
                 </>
               ) : (
                 <>
-                  <Upload className="mr-2 h-4 w-4" />
+                  <RiUploadCloud2Line className="mr-2 h-4 w-4" />
                   Upload & Process Files
                 </>
               )}
@@ -231,7 +231,7 @@ const UploadPage = () => {
           {/* Error Alert */}
           {error && (
             <Alert variant="destructive">
-              <XCircle className="h-4 w-4" />
+              <RiCloseCircleLine className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
@@ -243,7 +243,7 @@ const UploadPage = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+              <RiCheckboxCircleLine className="h-5 w-5 text-green-600" />
               ETL Processing Complete
             </CardTitle>
           </CardHeader>
@@ -310,7 +310,7 @@ const UploadPage = () => {
                   window.open(downloadFile(etlResult.output_file), "_blank")
                 }
               >
-                <Download className="mr-2 h-4 w-4" />
+                <RiDownloadLine className="mr-2 h-4 w-4" />
                 Download Weekly Trend
               </Button>
               <Button
@@ -320,12 +320,12 @@ const UploadPage = () => {
               >
                 {analyzing ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <RiLoader4Line className="mr-2 h-4 w-4 animate-spin" />
                     Analyzing...
                   </>
                 ) : (
                   <>
-                    <PlayCircle className="mr-2 h-4 w-4" />
+                    <RiPlayCircleLine className="mr-2 h-4 w-4" />
                     Run Corrective Actions Analysis
                   </>
                 )}
@@ -340,13 +340,13 @@ const UploadPage = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+              <RiCheckboxCircleLine className="h-5 w-5 text-green-600" />
               Analysis Complete
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert>
-              <CheckCircle className="h-4 w-4" />
+              <RiCheckboxCircleLine className="h-4 w-4" />
               <AlertDescription>
                 {analysisResult.message} - {analysisResult.details_count || 0}{" "}
                 changes detected
@@ -396,7 +396,7 @@ const UploadPage = () => {
                 window.open(downloadFile(analysisResult.output_file), "_blank")
               }
             >
-              <Download className="mr-2 h-4 w-4" />
+              <RiDownloadLine className="mr-2 h-4 w-4" />
               Download Analysis Report (Summary + Details)
             </Button>
           </CardContent>
