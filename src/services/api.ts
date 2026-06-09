@@ -12,7 +12,7 @@ const getAPIURL = (): string => {
       return url;
     }
   }
-  return "http://localhost:8000/api";
+  return "https://projectmanagementback-production.up.railway.app/api";
 };
 
 const API_BASE_URL = getAPIURL();
