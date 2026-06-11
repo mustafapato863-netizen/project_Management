@@ -24,7 +24,7 @@ const AddMilestoneModal = ({
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<MilestoneStatus>("Planned");
 
-  const [isSaving, setIsSaving] = useState(false);
+
   const [errors, setErrors] = useState<{
     title?: string;
     dueDate?: string;
@@ -59,7 +59,7 @@ const AddMilestoneModal = ({
     return newErrors;
   };
 
-  const handleAdd = async () => {
+  const handleAdd = () => {
     setTouched({ title: true, dueDate: true });
     const newErrors = validateForm();
 
@@ -68,26 +68,17 @@ const AddMilestoneModal = ({
       return;
     }
 
-    setIsSaving(true);
     setErrors({});
 
-    try {
-      await addMilestone(projectId, {
-        title,
-        description,
-        status,
-        dueDate: new Date(dueDate).toISOString(),
-      });
+    // Optimistically trigger milestone addition
+    addMilestone(projectId, {
+      title,
+      description,
+      status,
+      dueDate: new Date(dueDate).toISOString(),
+    });
 
-      handleClose();
-    } catch {
-      setErrors((prev) => ({
-        ...prev,
-        submit: "Failed to add milestone. Check that the backend server is running.",
-      }));
-    } finally {
-      setIsSaving(false);
-    }
+    handleClose();
   };
 
   if (!isOpen) return null;
@@ -201,10 +192,9 @@ const AddMilestoneModal = ({
             </Button>
             <Button
               onClick={handleAdd}
-              disabled={isSaving}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {isSaving ? "Adding..." : "Add Milestone"}
+              Add Milestone
             </Button>
           </div>
         </CardContent>

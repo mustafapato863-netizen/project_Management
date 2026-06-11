@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
+import { Toaster } from "react-hot-toast";
 import Layout from "./components/layout/Layout";
 import DashboardPage from "./pages/DashboardPage";
 import ProjectsPage from "./pages/ProjectsPage";
@@ -44,6 +45,7 @@ function App() {
           <Route path="/roadmap" element={<RoadmapPage />} />
         </Routes>
       </Layout>
+      <Toaster position="top-right" />
     </Router>
   );
 }

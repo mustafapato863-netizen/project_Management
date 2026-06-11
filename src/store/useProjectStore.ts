@@ -8,6 +8,7 @@ import {
 } from "@/types";
 import { generateId } from "@/utils/generateId";
 import { projectApi } from "@/services/projectApi";
+import { toast } from "react-hot-toast";
 
 interface ProjectStore {
   projects: Project[];
@@ -170,26 +171,105 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
   },
 
   addMilestone: async (projectId, milestoneData) => {
-    const project = get().getProjectById(projectId);
-    if (!project) return;
+    const currentProjects = Array.isArray(get().projects) ? get().projects : [];
+    const project = currentProjects.find((p) => p.id === projectId);
+    if (!project) {
+      toast.error("Project not found!");
+      return;
+    }
 
+    const currentMilestones = Array.isArray(project.milestones) ? project.milestones : [];
+    const tempId = `temp-${generateId()}`;
     const newMilestone: Milestone = {
       ...milestoneData,
-      id: generateId(),
-      order: milestoneData.order ?? project.milestones.length,
+      id: tempId,
+      order: milestoneData.order ?? currentMilestones.length,
     };
 
-    await get().updateProject(projectId, {
-      milestones: [...project.milestones, newMilestone],
+    // Keep reference to previous milestone IDs to identify server-assigned ID
+    const previousMilestoneIds = new Set(currentMilestones.map((m) => m.id));
+
+    // Optimistic Mutation: immediately insert the milestone into the state
+    const optimisticMilestones = [...currentMilestones, newMilestone];
+
+    set({
+      projects: currentProjects.map((p) =>
+        p.id === projectId ? { ...p, milestones: optimisticMilestones } : p
+      ),
     });
+
+    // Run the API update in the background (asynchronous background sync)
+    (async () => {
+      try {
+        const updatedProject = await projectApi.update(projectId, {
+          milestones: optimisticMilestones,
+        });
+        const meta = await projectApi.getMeta();
+
+        if (updatedProject && Array.isArray(updatedProject.milestones)) {
+          // Identify the newly created milestone from the server's returned list
+          // It is the milestone in the server list whose ID was NOT in the previous list of IDs.
+          const serverNewMilestone = updatedProject.milestones.find(
+            (m) => m && m.id && !previousMilestoneIds.has(m.id)
+          );
+
+          // If the server returned a database-generated ID, use it. Otherwise fallback to tempId.
+          const permanentId = serverNewMilestone ? serverNewMilestone.id : tempId;
+
+          // Seamless ID Swapping in local state
+          set((state) => {
+            const stateProjects = Array.isArray(state.projects) ? state.projects : [];
+            return {
+              projects: stateProjects.map((p) => {
+                if (p.id !== projectId) return p;
+                const pMilestones = Array.isArray(p.milestones) ? p.milestones : [];
+                return {
+                  ...p,
+                  milestones: pMilestones.map((m) =>
+                    m.id === tempId ? { ...m, id: permanentId } : m
+                  ),
+                };
+              }),
+              serverUpdatedAt: meta.updatedAt,
+              lastSyncedAt: new Date().toISOString(),
+              error: null,
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Failed to sync optimistic milestone:", error);
+
+        // Perform full state rollback by removing the optimistic milestone
+        set((state) => {
+          const stateProjects = Array.isArray(state.projects) ? state.projects : [];
+          return {
+            projects: stateProjects.map((p) => {
+              if (p.id !== projectId) return p;
+              const pMilestones = Array.isArray(p.milestones) ? p.milestones : [];
+              return {
+                ...p,
+                milestones: pMilestones.filter((m) => m.id !== tempId),
+              };
+            }),
+          };
+        });
+
+        // Set store error state
+        setSyncError("Failed to save milestone changes to server.");
+
+        // Alert user with a non-blocking toast
+        toast.error(`Failed to add milestone "${newMilestone.title}". Your changes were rolled back.`);
+      }
+    })();
   },
 
   updateMilestone: async (projectId, milestoneId, updates) => {
     const project = get().getProjectById(projectId);
     if (!project) return;
 
-    const updatedMilestones = project.milestones.map((milestone) =>
-      milestone.id === milestoneId ? { ...milestone, ...updates } : milestone,
+    const milestones = Array.isArray(project.milestones) ? project.milestones : [];
+    const updatedMilestones = milestones.map((milestone) =>
+      milestone && milestone.id === milestoneId ? { ...milestone, ...updates } : milestone,
     );
 
     await get().updateProject(projectId, { milestones: updatedMilestones });
@@ -199,8 +279,9 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     const project = get().getProjectById(projectId);
     if (!project) return;
 
-    const updatedMilestones = project.milestones.filter(
-      (milestone) => milestone.id !== milestoneId,
+    const milestones = Array.isArray(project.milestones) ? project.milestones : [];
+    const updatedMilestones = milestones.filter(
+      (milestone) => milestone && milestone.id !== milestoneId,
     );
 
     await get().updateProject(projectId, { milestones: updatedMilestones });
@@ -210,8 +291,10 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     const project = get().getProjectById(projectId);
     if (!project) return;
 
-    const orderMap = new Map(milestoneIds.map((id, index) => [id, index]));
-    const reorderedMilestones = project.milestones
+    const milestones = Array.isArray(project.milestones) ? project.milestones : [];
+    const ids = Array.isArray(milestoneIds) ? milestoneIds : [];
+    const orderMap = new Map(ids.map((id, index) => [id, index]));
+    const reorderedMilestones = [...milestones]
       .sort(
         (a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0),
       )
